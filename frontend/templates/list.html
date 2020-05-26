@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="container">
+        <div class="table" id="product-table">
+            <div class="tr">
+                <span class="td">SKU</span>
+                <span class="td">Title</span>
+                <span class="td">Price</span>
+                <span class="td">Status</span>
+                <span class="td">Category</span>
+                <span class="td">Action</span>
+            </div>
+        </div>
+        <div id="form-wrapper" class="table">
+            <form id="form" class="tr">
+                <span class="td"><input id="sku" class="form-control" type="text" name="sku" placeholder="sku"></span>
+                <span class="td"><input id="title" class="form-control" type="text" name="title" placeholder="title"></span>
+                <span class="td"><input id="price" class="form-control" type="text" name="price" placeholder="price"></span>
+                <span class="td"><input id="category" class="form-control" type="text" name="category" placeholder="category"></span>
+                <span class="td"><input id="status" class="form-control" type="text" name="status" placeholder="status"></span>
+                <span class="td"><input id="submit" class="btn btn-secondary td" type="submit"></span>
+            </form>
+        </div>
+    </div>
+
+<script type="text/javascript">
+
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
+
+    buildList()
+    function buildList() {
+        var table = document.getElementById('product-table')
+        table.innerHTML = ''
+        var url = 'http://127.0.0.1:8000/api/product-list/'
+
+        fetch(url)
+        .then(res => res.json())
+        .then(function(data) {
+            var list = data
+            var listdata = ''
+            var headers = `
+                <div class="tr">
+                    <span class="td">SKU</span>
+                    <span class="td">Title</span>
+                    <span class="td">Price</span>
+                    <span class="td">Status</span>
+                    <span class="td">Category</span>
+                    <span class="td">Action</span>
+                </div>
+            `
+
+            for (let i in list) {
+                var product = `
+                
+                <div id="data-row-${list[i].id}" class="tr product-item">
+                    <span class="td">${list[i].sku}</span>
+                    <span class="td">${list[i].title}</span>
+                    <span class="td">${list[i].price}</span>
+                    <span class="td">${list[i].status}</span>
+                    <span class="td">${list[i].category}</span>
+                    <span class="td">
+                        <span class="action edit data-edit-${list[i].id}">Edit</span>
+                        <span class="action delete data-delete-${list[i].id}">Delete</span>
+                    </span>
+                </div>
+                `
+
+                listdata += product
+            }
+            table.innerHTML = headers + listdata
+            console.log(list)
+            for (let i in list) {
+                document.getElementsByClassName('edit')[i].addEventListener('click', (function(product) {
+                    return function(){
+                        editProduct(product)
+                    }
+                })(list[i]))
+            }
+        })
+    }
+
+    document.getElementById('form-wrapper').addEventListener('submit', function(e) {
+        e.preventDefault()
+        console.log('form submitted')
+
+        var url = 'http://127.0.0.1:8000/api/product-create/'
+        var sku = document.getElementById('sku').value
+        var title = document.getElementById('title').value
+        var price = document.getElementById('price').value
+        var category = document.getElementById('category').value
+        var status = document.getElementById('status').value
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify({
+                'sku': sku,
+                'title': title,
+                'price': price,
+                'category': category,
+                'status': status,
+                })
+            }).then(function(response) {
+                buildList()
+                document.getElementById('form').reset()
+            }
+        )
+    })
+
+    function editProduct(product) {
+
+        var activeElement = document.getElementById(`data-row-${product.id}`)
+        activeElement.innerHTML = `
+            <span id="prod-sku-${product.id}" class="td"><input type="text" value="${product.sku}"></input></span>
+            <span id="prod-title-${product.id}" class="td"><input type="text" value="${product.title}"></span>
+            <span id="prod-price-${product.id}" class="td"><input type="text" value="${product.price}"></span>
+            <span id="prod-status-${product.id}" class="td"><input type="text" value="${product.status}"></span>
+            <span id="prod-category-${product.id}" class="td"><input type="text" value="${product.category}"></span>
+            <span id="prod-action-${product.id}" class="td">
+                <span class="action data-save-${product.id}">Save</span>
+                <span class="action data-cancel-${product.id}">Cancel</span>
+                <span class="action data-delete-${product.id}">Delete</span>
+            </span>
+        `
+
+        var saveIt = document.getElementsByClassName(`data-save-${product.id}`)[0].addEventListener('click', function(){
+            var price = document.getElementById(`prod-sku-${product.id}`).value
+            console.log(price)
+        })
+        
+    }
+
+</script>
+{% endblock content %}
